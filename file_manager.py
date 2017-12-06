@@ -34,8 +34,7 @@ def split_columns(data, columns):
     return jsons, data
 
 
-
-
+#convert json arrays and jsons to dataframe
 def json_to_dataframe(jsons):
     data = defaultdict(list)
     # check if array of jsons
@@ -63,6 +62,8 @@ def read_movies():
 def read_keywords():
     keywords = read_file(KEYWORDS_FILEPATH, keywords_json_cols)
     jsons, data = split_columns(keywords, keywords_json_cols)
+    # key: column name
+    # value: dataframe
     json_dict = {column: json_to_dataframe(jsons[i]) for i, column in enumerate(keywords_json_cols)}
 
 
@@ -74,6 +75,7 @@ def read_credits():
 
 def read_links():
     links = read_file(LINKS_FILEPATH)
+
 
 def read_ratings():
     ratings = read_file(RATINGS_FILEPATH)
