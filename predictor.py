@@ -54,8 +54,8 @@ def predict(input):
 
 
 # INPUTS
-# keywords: categorical
-# actors: categorical
+# keywords: categorical 158679
+# actors: categorical 562473
 # director: categorical
 # scenario: categorical
 # budget: numerical

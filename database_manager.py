@@ -1,8 +1,8 @@
 #WARNING: vse poizvedbe morajo biti filtrirane na to ali ima filem definiran budget in revenue
-# Potrebujejo filter: num_unique
+# Potrebujejo filter: num_unique, all_keywords, all_actors,
 
 # Ne potrebujejo filtra
-# all_keywords, all_actors, column_types
+# column_types
 
 
 # stevilo unikatnih vrstic v podanih stolpcih in tabelah
