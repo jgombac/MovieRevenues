@@ -1,3 +1,8 @@
+#WARNING: vse poizvedbe morajo biti filtrirane na to ali ima filem definiran budget in revenue
+# Potrebujejo filter: num_unique
+
+# Ne potrebujejo filtra
+# all_keywords, all_actors, column_types
 
 
 # stevilo unikatnih vrstic v podanih stolpcih in tabelah
@@ -13,20 +18,17 @@ def column_types():
     pass
 
 
-
+# seznam vseh igralcev
+# vhod: /
+# izhod: list [{id_igralca1: "ime_igralca1"}, {id_igralca2: "ime_igralca2"}]
 def all_actors():
     pass
 
-
-
-
-# id filma kjer nastopa igralec
-# vhod: "Ime Igralca"
-# izhod: int (movieId)
-def acts_in_movie(actor_id):
+# seznam vseh kljucnih besed
+# vhod: /
+# izhod: list [{id_KB1: "besedilo_KB1"}, {id_KB2: "besedilo_KB2"}]
+def all_keywords():
     pass
-
-
 
 
 
