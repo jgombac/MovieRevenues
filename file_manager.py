@@ -22,6 +22,8 @@ def read_file(filename, json_cols=list()):
                 data[column][i] = ast.literal_eval(x)
     return data
 
+comp = [x for x in range(0,1)]
+
 
 #split json columns from elemental columns
 def split_json_cols(data, columns):
