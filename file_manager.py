@@ -35,18 +35,11 @@ def split_json_cols(data, columns):
 #convert json arrays and jsons to dataframe
 def json_to_dataframe(jsons):
     data = defaultdict(list)
-    # check if array of jsons
-    if isinstance(jsons[0], list):
-        for json_array in jsons:
-            for json in json_array:
-                for key in json:
-                    data[key].append(json[key])
-    else:
-        for json in jsons:
-            # if not empty array
-            if isinstance(json, dict):
-                for key in json:
-                    data[key].append(json[key])
+    for json in jsons:
+        # if not empty array
+        if isinstance(json, dict):
+            for key in json:
+                data[key].append(json[key])
     dataframe = pd.DataFrame(data)
     return dataframe
 
@@ -56,8 +49,10 @@ def read_movies():
     movies_array_cols = [("genres", "id", "movies", "tmdb"), ("production_companies", "id", "movies", "tmdb")]
     split_cols = split_array_columns(movies_raw, "id", movies_array_cols)
     print(split_cols)
-    jsons, data = split_json_cols(movies_raw, movies_json_cols)
-    json_dict = {column: json_to_dataframe(jsons[i]) for i, column in enumerate(movies_json_cols)}
+    jsons, data = split_json_cols(movies_raw, ["belongs_to_collection"])
+    json_dict = {column: json_to_dataframe(jsons[i]) for i, column in enumerate(["belongs_to_collection"])}
+
+
 
 def split_array_columns(data, data_id_name, array_columns):
     split_cols = {}
