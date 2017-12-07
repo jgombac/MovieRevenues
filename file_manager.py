@@ -52,8 +52,11 @@ def json_to_dataframe(jsons):
 
 
 def read_movies():
-    movies = read_file(MOVIES_FILEPATH, movies_json_cols)
-    jsons, data = split_json_cols(movies, movies_json_cols)
+    movies_raw = read_file(MOVIES_FILEPATH, movies_json_cols)
+    movies_array_cols = [("genres", "id", "movies", "tmdb"), ("production_companies", "id", "movies", "tmdb")]
+    split_cols = split_array_columns(movies_raw, "id", movies_array_cols)
+    print(split_cols)
+    jsons, data = split_json_cols(movies_raw, movies_json_cols)
     json_dict = {column: json_to_dataframe(jsons[i]) for i, column in enumerate(movies_json_cols)}
 
 def split_array_columns(data, data_id_name, array_columns):
@@ -87,18 +90,12 @@ def read_keywords():
     keywords_json_cols = ["keywords"]
     # (koncna_tabela, id_koncne, vmesna_tabela, dodatek_vmesni)
     keywords_array_cols = [("keywords", "id", "movies", "tmdb")]
-    # movies_keywords => tmdb_id, id_keyword
-    # keywords => id_keyword, name
     keywords_raw = read_file(KEYWORDS_FILEPATH, keywords_json_cols)
     split_cols = split_array_columns(keywords_raw, "id", keywords_array_cols)
     print(split_cols)
     jsons, data = split_json_cols(keywords_raw, keywords_json_cols)
-    # key: column name
-    # value: dataframe
     json_dict = {column: json_to_dataframe(jsons[i]) for i, column in enumerate(keywords_json_cols)}
-    #print("keywords", data)
-    #print(json_dict)
-    #print(json_dict["keywords"])
+
 
 
 def read_credits():
@@ -116,8 +113,8 @@ def read_ratings():
 
 
 if __name__ == "__main__":
-    #read_movies()
-    read_keywords()
+    read_movies()
+    #read_keywords()
     #read_credits()
     #read_links()
     #read_ratings()
