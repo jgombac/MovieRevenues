@@ -104,30 +104,32 @@ def read_keywords():
     # push split_array_tables
 
 
-#most likely ready for DB
+def split_credits(data):
+    # id_person, name, gender, profile_path, id_tmdb
+    people = []
+    # id_credit, order, character, !id_tmdb, !id_person
+    cast = []
+    # id_credit, job, department, !id_tmdb, !id_person
+    crew = []
+
+    for i, cast_array in enumerate(data["cast"]):
+        tmdb_id = data["id"][i]
+        for cast_obj in cast_array:
+            people.append({"id_person": cast_obj["id"], "name": cast_obj["name"], "gender": cast_obj["gender"], "profile_path": cast_obj["profile_path"]})
+            cast.append({"id_credit": cast_obj["credit_id"], "order": cast_obj["order"], "character": cast_obj["character"], "id_tmdb": tmdb_id, "id_person": cast_obj["id"]})
+
+    for i, crew_array in enumerate(data["crew"]):
+        tmdb_id = data["id"][i]
+        for crew_obj in crew_array:
+            people.append({"id_person": crew_obj["id"], "name": crew_obj["name"], "gender": crew_obj["gender"], "profile_path": crew_obj["profile_path"]})
+            crew.append({"id_credit": crew_obj["credit_id"], "job": crew_obj["job"], "department": crew_obj["department"], "id_tmdb": tmdb_id, "id_person": crew_obj["id"]})
+
+    return {"people": pd.DataFrame(people), "cast": pd.DataFrame(cast), "crew": pd.DataFrame(crew)}
+
+# ready for DB
 def read_credits():
     credits = read_file(CREDITS_FILEPATH, credits_inner_cols)
-    split_cols = split_array_columns(credits, "id", credits_array_cols)
-    movies_cast = split_cols["movies_cast"]
-    movies_crew = split_cols["movies_crew"]
-    cast = split_cols["cast"]
-    crew = split_cols["crew"]
-    movies_cast = pd.concat([movies_cast, cast["credit_id"]], axis=1, join="outer")
-    actors = pd.concat([cast["id_cast"], cast["name"], cast["gender"], cast["profile_path"]], axis=1, join="outer")
-    cast.drop(columns=["cast_id", "id_cast", "gender", "profile_path", "name"], axis=1, inplace=True)
-    movies_crew = pd.concat([movies_crew, crew["credit_id"]], axis=1, join="outer")
-    coworkers = pd.concat([crew["id_crew"], crew["name"], crew["gender"], crew["profile_path"]], axis=1, join="outer")
-    crew.drop(columns=["name", "gender", "id_crew", "profile_path"], axis=1, inplace=True)
-
-
-    credits_tables = {
-        "movies_cast": movies_cast,
-        "cast": cast,
-        "actors": actors,
-        "movies_crew": movies_crew,
-        "crew": crew,
-        "coworkers": coworkers
-    }
+    credit_tables = split_credits(credits)
 
 
 
