@@ -45,10 +45,14 @@ def split_json_columns(data, columns, row_id, id_append):
                 outer_id = data[row_id][i]
                 for key in json:
                     col_df[key].append(json[key])
-                col_df[row_id_name].append(outer_id)
+                data[column][i] = json["id"]
+
+                #col_df[row_id_name].append(outer_id)
+
         jsons[column] = pd.DataFrame(col_df)
-        data.drop(column, axis=1, inplace=True)
+        #data.drop(column, axis=1, inplace=True)
     return jsons
+
 
 
 def split_array_columns(data, data_id_name, array_columns):
@@ -94,6 +98,7 @@ def read_movies():
     split_json_tables = split_json_columns(movies_raw, movies_json_cols, "id", "tmdb")
     movies_raw.rename(index=str, columns={"id": "id_tmdb", "imdb_id": "id_imdb"}, inplace=True)
     movies_table = {"movies": movies_raw}
+    print(movies_raw, split_json_tables)
     # push split_array_tables, split_json_tables, movies_table
 
 
@@ -150,8 +155,8 @@ def read_ratings():
 
 
 if __name__ == "__main__":
-    #read_movies()
+    read_movies()
     #read_keywords()
-    read_credits()
+    #read_credits()
     #read_links()
     #read_ratings()
