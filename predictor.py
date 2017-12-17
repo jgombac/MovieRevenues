@@ -1,7 +1,6 @@
 import tensorflow as tf
 
 
-
 estimator = None
 
 def initialize():

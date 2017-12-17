@@ -1,7 +1,10 @@
 import pandas as pd
 import ast
 from collections import defaultdict
-
+import db_connector as db
+import sqlalchemy as sl
+import urllib.parse
+import data_types as dt
 MOVIES_FILEPATH = "movies_demo.csv"
 movies_inner_cols = ["belongs_to_collection", "genres", "production_companies", "production_countries", "spoken_languages"]
 movies_json_cols = ["belongs_to_collection"]
@@ -46,9 +49,7 @@ def split_json_columns(data, columns, row_id, id_append):
                 for key in json:
                     col_df[key].append(json[key])
                 data[column][i] = json["id"]
-
                 #col_df[row_id_name].append(outer_id)
-
         jsons[column] = pd.DataFrame(col_df)
         #data.drop(column, axis=1, inplace=True)
     return jsons
@@ -92,20 +93,59 @@ def json_to_dataframe(jsons):
 
 
 # ready for DB
-def read_movies():
+def read_movies(dbinstance):
     movies_raw = read_file(MOVIES_FILEPATH, movies_inner_cols)
     split_array_tables = split_array_columns(movies_raw, "id", movies_array_cols)
     split_json_tables = split_json_columns(movies_raw, movies_json_cols, "id", "tmdb")
     movies_raw.rename(index=str, columns={"id": "id_tmdb", "imdb_id": "id_imdb"}, inplace=True)
-    movies_table = {"movies": movies_raw}
-    print(movies_raw, split_json_tables)
-    # push split_array_tables, split_json_tables, movies_table
+    # VNESENO
+    #for key, value in split_array_tables['movies_production_companies'].iterrows():
+      #  dbinstance.recieve_dataobject(dt.DataType.PRODUCIRA.value, value)
+    # VNESENO
+    # for key, value in split_json_tables['belongs_to_collection'].iterrows():
+    #     dbinstance.recieve_dataobject(dt.DataType.COLLECTION.value, value)
+    # VNESENO
+    #for index, row in movies_raw.iterrows():
+    #   dbinstance.recieve_dataobject(dt.DataType.MOVIE.value, row)
+
+    # VNESENO
+    #for index, row in split_array_tables['genres'].iterrows():
+     #   dbinstance.recieve_dataobject(dt.DataType.GENRES.value, row)
+    # VNESENO
+    #for index, row in split_array_tables['production_companies'].iterrows():
+     #   dbinstance.recieve_dataobject(dt.DataType.PRODUCTION_COMPANY.value, row)
+
+    #for index, row in split_array_tables['production_countries'].iterrows():
+     #   dbinstance.recieve_dataobject(dt.DataType.PRODUCTION_COUNTRY.value, row)
+        # VNESENO
+    #for index, row in split_array_tables['spoken_languages'].iterrows():
+        #dbinstance.recieve_dataobject(dt.DataType.SPOKEN_LANGUAGES.value, row)
+    # VNESENO
+  #  for index,row in split_array_tables['movies_spoken_languages'].iterrows():
+    #    dbinstance.recieve_dataobject(dt.DataType.SPOKEN_LANGUAGES_JEZIKU.value, row)
+    # VNESENO
+   # for index,row  in split_array_tables['movies_genres'].iterrows():
+    #    dbinstance.recieve_dataobject(dt.DataType.VSTILU.value, row)
+    # VNESENO
+    #for key,value in split_array_tables['movies_production_countries'].iterrows():
+     #   dbinstance.recieve_dataobject(dt.DataType.PRODUCIRA.value, value)
 
 
-# ready for DB
-def read_keywords():
+ #   for key, value in split_array_tables['movies_production_countries'].iterrows():
+#        dbinstance.recieve_dataobject(dt.DataType.PRODUCIRA_COUNTRY.value, value)
+
+
+def read_keywords(dbinstance):
     keywords_raw = read_file(KEYWORDS_FILEPATH, keywords_inner_cols)
     split_array_tables = split_array_columns(keywords_raw, "id", keywords_array_cols)
+    #vneseno
+    #for key, value in split_array_tables['keywords'].iterrows():
+     #   dbinstance.recieve_dataobject(dt.DataType.KEYWORDS.value, value)
+    # vneseno
+    #for key,value in split_array_tables['movies_keywords'].iterrows():
+     #   dbinstance.recieve_dataobject(dt.DataType.KEYWORDS_VMESNA.value, value)
+
+    #
     # push split_array_tables
 
 
@@ -131,32 +171,58 @@ def split_credits(data):
 
     return {"people": pd.DataFrame(people), "cast": pd.DataFrame(cast), "crew": pd.DataFrame(crew)}
 
+
+
 # ready for DB
-def read_credits():
+def read_credits(dbinstance):
     credits = read_file(CREDITS_FILEPATH, credits_inner_cols)
     credit_tables = split_credits(credits)
+    #VNESENO
+    #for key,value in credit_tables['cast'].iterrows():
+     #   dbinstance.recieve_dataobject(dt.DataType.CREDITS.value, value)
+    #for key, value in credit_tables['crew'].iterrows():
+    #    dbinstance.recieve_dataobject(dt.DataType.CREDITS.value, value)
+    #vneseno
+    #for key, value in credit_tables['cast'].iterrows():
+     #   dbinstance.recieve_dataobject(dt.DataType.CAST.value, value)
+    #vneseno
+    #for key, value in credit_tables['crew'].iterrows():
+     #   dbinstance.recieve_dataobject(dt.DataType.CREW.value, value)
+    #VNESENO
+    #for key,value in credit_tables['people'].iterrows():
+       #dbinstance.recieve_dataobject(dt.DataType.PEOPLE.value, value)
 
 
 
 # ready for DB
-def read_links():
+def read_links(dbinstance):
     links = read_file(LINKS_FILEPATH)
     links.rename(index=str, columns={"movieId": "id_movie", "imdbId": "id_imdb", "tmdbId": "id_tmdb"}, inplace=True)
     links_table = {"links": links}
+    for key,value in links_table['links'].iterrows():
+        dbinstance.recieve_dataobject(dt.DataType.LINKS.value, value)
+
     # push links_table
 
 
 # ready for DB
-def read_ratings():
+def read_ratings(dbinstance):
     ratings = read_file(RATINGS_FILEPATH)
     ratings.rename(index=str, columns={"userId": "id_user","movieId": "id_movie"}, inplace=True)
     ratings_table = {"ratings": ratings}
-    # push ratings_table
+
+    #for key,value in ratings_table['ratings'].iterrows():
+      #  dbinstance.recieve_dataobject_with_key(dt.DataType.RATINGS.value,key,value)
+
+
 
 
 if __name__ == "__main__":
-    read_movies()
-    #read_keywords()
-    #read_credits()
-    #read_links()
-    #read_ratings()
+    coninstance = db.DB_connector("DSN=MOVIESDB;UID=admin_python;PWD=Python123")
+    #read_movies(coninstance)
+    #read_keywords(coninstance)
+    #read_links(coninstance)
+    #read_ratings(coninstance)
+    #read_credits(coninstance)
+    coninstance.close_connection()
+
