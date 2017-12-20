@@ -19,7 +19,6 @@ class DB_connector:
         return ''.join(i)
 
     def recieve_dataobject(self,type,obj):
-       if self.is_valid(obj,type):
             if type == 1:
                 id = obj['id_tmdb']
                 belongs = None if pan.isnull(obj['belongs_to_collection']) else obj['belongs_to_collection']
@@ -57,7 +56,7 @@ class DB_connector:
                 data = (id,id_mov)
                 self.insert_db_keywords_vmesna(data)
             elif type == 3.2:
-                id = obj['id_keywords']
+                id = int(obj['id'])
                 name = obj['name']
                 data = (id, name)
                 self.insert_db_keywords(data)
@@ -134,8 +133,7 @@ class DB_connector:
                 id_person = obj['id_person']
                 data = (job, department, id_person)
                 self.insert_db_crew(data)
-       else:
-           print("DENIED")
+
 
 
     def recieve_dataobject_with_key(self,type,key,obj):

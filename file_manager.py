@@ -2,9 +2,10 @@ import pandas as pd
 import ast
 from collections import defaultdict
 import db_connector as db
-import sqlalchemy as sl
-import urllib.parse
 import data_types as dt
+
+
+
 MOVIES_FILEPATH = "movies_demo.csv"
 movies_inner_cols = ["belongs_to_collection", "genres", "production_companies", "production_countries", "spoken_languages"]
 movies_json_cols = ["belongs_to_collection"]
@@ -25,9 +26,38 @@ LINKS_FILEPATH = "links_demo.csv"
 
 RATINGS_FILEPATH = "ratings_demo.csv"
 
+import csv
+
+def getstuff(filename, criterion):
+    with open(filename, "r",encoding='utf8') as csvfile:
+        datareader = csv.reader(csvfile)
+        arr = []
+        count = 0
+        for row in datareader:
+            if count != 0:
+                slic = ast.literal_eval(row[1])
+                for x in slic:
+                    arr.append(x)
+            count+=1
+        return arr
+
+def getstuff2(filename, criterion):
+    with open(filename, "r",encoding='utf8') as csvfile:
+        datareader = csv.reader(csvfile)
+        arr = []
+        count = 0
+        for row in datareader:
+            if count != 0:
+                slic = ast.literal_eval(row)
+                for x in slic:
+                    arr.append(x)
+            count+=1
+        return arr
+
+
 
 def read_file(filename, json_cols=list()):
-    data = pd.read_csv(filename)
+    data = pd.read_csv(filename,nrows=100,skiprows=[1,2000])
     for column in json_cols:
         for i, x in enumerate(data[column]):
             if not pd.isnull(x):
@@ -74,7 +104,7 @@ def split_array_columns(data, data_id_name, array_columns):
                 mid_table_row = pd.DataFrame({mid_id_name: [data_id for i in range(end_table_row.shape[0])], end_id_name: end_table_row[end_id_name]})  # generiraj vmesno tabelo
                 mid_df = pd.concat([mid_df, mid_table_row]) # pripni k skupni tabeli
                 end_df = pd.concat([end_df, end_table_row])
-        data.drop(end_table, axis=1, inplace=True)
+        #data.drop(end_table, axis=1, inplace=True)
         split_cols[mid_df_name] = mid_df  # vstavi tabelo v slovar {"movies_keywords": vmesna_tabela, "keywords": tabela, ...}
         split_cols[end_df_name] = end_df
     return split_cols
@@ -98,15 +128,17 @@ def read_movies(dbinstance):
     split_array_tables = split_array_columns(movies_raw, "id", movies_array_cols)
     split_json_tables = split_json_columns(movies_raw, movies_json_cols, "id", "tmdb")
     movies_raw.rename(index=str, columns={"id": "id_tmdb", "imdb_id": "id_imdb"}, inplace=True)
+    #for key, value in split_json_tables['belongs_to_collection'].iterrows():
+      #    dbinstance.recieve_dataobject(dt.DataType.COLLECTION.value, value)
     # VNESENO
     #for key, value in split_array_tables['movies_production_companies'].iterrows():
       #  dbinstance.recieve_dataobject(dt.DataType.PRODUCIRA.value, value)
+
+
+
     # VNESENO
-    # for key, value in split_json_tables['belongs_to_collection'].iterrows():
-    #     dbinstance.recieve_dataobject(dt.DataType.COLLECTION.value, value)
-    # VNESENO
-    #for index, row in movies_raw.iterrows():
-    #   dbinstance.recieve_dataobject(dt.DataType.MOVIE.value, row)
+    for index, row in movies_raw.iterrows():
+        dbinstance.recieve_dataobject(dt.DataType.MOVIE.value, row)
 
     # VNESENO
     #for index, row in split_array_tables['genres'].iterrows():
@@ -137,10 +169,10 @@ def read_movies(dbinstance):
 
 def read_keywords(dbinstance):
     keywords_raw = read_file(KEYWORDS_FILEPATH, keywords_inner_cols)
-    split_array_tables = split_array_columns(keywords_raw, "id", keywords_array_cols)
+    split_array_tables = split_array_columns(x, "id", keywords_array_cols)
     #vneseno
-    #for key, value in split_array_tables['keywords'].iterrows():
-     #   dbinstance.recieve_dataobject(dt.DataType.KEYWORDS.value, value)
+    #print(split_array_tables['keywords'][0])
+
     # vneseno
     #for key,value in split_array_tables['movies_keywords'].iterrows():
      #   dbinstance.recieve_dataobject(dt.DataType.KEYWORDS_VMESNA.value, value)
@@ -201,7 +233,6 @@ def read_links(dbinstance):
     links_table = {"links": links}
     for key,value in links_table['links'].iterrows():
         dbinstance.recieve_dataobject(dt.DataType.LINKS.value, value)
-
     # push links_table
 
 
@@ -210,17 +241,15 @@ def read_ratings(dbinstance):
     ratings = read_file(RATINGS_FILEPATH)
     ratings.rename(index=str, columns={"userId": "id_user","movieId": "id_movie"}, inplace=True)
     ratings_table = {"ratings": ratings}
-
     #for key,value in ratings_table['ratings'].iterrows():
       #  dbinstance.recieve_dataobject_with_key(dt.DataType.RATINGS.value,key,value)
 
 
 
-
 if __name__ == "__main__":
     coninstance = db.DB_connector("DSN=MOVIESDB;UID=admin_python;PWD=Python123")
-    #read_movies(coninstance)
     #read_keywords(coninstance)
+    read_movies(coninstance)
     #read_links(coninstance)
     #read_ratings(coninstance)
     #read_credits(coninstance)
