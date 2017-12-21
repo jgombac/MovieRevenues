@@ -7,12 +7,12 @@ import data_types as dt
 
 
 MOVIES_FILEPATH = "movies_metadata.csv"
-movies_inner_cols = ["genres"]
+movies_inner_cols = ["spoken_languages"]
 movies_json_cols = ["belongs_to_collection"]
-movies_array_cols = [("genres", "id", "movies", "tmdb"),]
-                     # ("production_companies", "id", "movies", "tmdb"),
-                     # ("production_countries", "iso_3166_1", "movies", "tmdb"),
-                     # ("spoken_languages", "iso_639_1", "movies", "tmdb")]
+movies_array_cols = [#("genres", "id", "movies", "tmdb"),]
+                      #("production_companies", "id", "movies", "tmdb"),]
+                      #("production_countries", "iso_3166_1", "movies", "tmdb"),]
+                      ("spoken_languages", "iso_639_1", "movies", "tmdb")]
 
 CREDITS_FILEPATH = "credits_demo.csv"
 credits_inner_cols = ["cast", "crew"]
@@ -57,7 +57,7 @@ def getstuff2(filename, criterion):
 
 
 def read_file(filename, json_cols=list()):
-    data = pd.read_csv(filename, skiprows=[i for i in range(1, 20000)], usecols=["genres","id"])
+    data = pd.read_csv(filename, usecols=["spoken_languages","id"])
     for column in json_cols:
         for i, x in enumerate(data[column]):
             if not pd.isnull(x):
@@ -96,7 +96,7 @@ def split_array_columns(data, data_id_name, array_columns):
         end_df_name = end_table                          # ime tabele/seznama objektov
         col_data = data[end_table]                         # trenutni stolpec
         for i, array in enumerate(col_data):                # cez vsako vrstico v stolpcu
-            if len(array) > 0:                           # ce ni prazen
+            if isinstance(array, list) and len(array) > 0:                           # ce ni prazen
                 data_id = data[data_id_name][i]          # id trenutnega stolpca
                 end_id_name = "id_" + end_table        # novo ime stolpca tabele (npr. id_keywords)
                 end_table_row = pd.DataFrame(array)      # pretvori seznam v dataframe
@@ -129,6 +129,7 @@ def read_movies(dbinstance):
     split_array_tables = split_array_columns(movies_raw, "id", movies_array_cols)
     #split_json_tables = split_json_columns(movies_raw, movies_json_cols, "id", "tmdb")
     movies_raw.rename(index=str, columns={"id": "id_tmdb", "imdb_id": "id_imdb"}, inplace=True)
+    split_array_tables["spoken_languages"].drop_duplicates(subset="id_spoken_languages", inplace=True)
     print(split_array_tables)
 
     #VNESENO
@@ -139,41 +140,38 @@ def read_movies(dbinstance):
     # for index, row in movies_raw.iterrows():
     #     dbinstance.recieve_dataobject(dt.DataType.MOVIE.value, row)
 
-
-    #for key, value in split_array_tables['movies_production_companies'].iterrows():
-      #  dbinstance.recieve_dataobject(dt.DataType.PRODUCIRA.value, value)
-
-
-
-
-
-    #
-    # for index, row in split_array_tables['genres'].iterrows():
-    #    dbinstance.recieve_dataobject(dt.DataType.GENRES.value, row)
-
-    for index,row  in split_array_tables['movies_genres'].iterrows():
-       dbinstance.recieve_dataobject(dt.DataType.VSTILU.value, row)
-
-
-    #for index, row in split_array_tables['production_companies'].iterrows():
-     #   dbinstance.recieve_dataobject(dt.DataType.PRODUCTION_COMPANY.value, row)
-
-    #for index, row in split_array_tables['production_countries'].iterrows():
-     #   dbinstance.recieve_dataobject(dt.DataType.PRODUCTION_COUNTRY.value, row)
-
-    #for index, row in split_array_tables['spoken_languages'].iterrows():
-        #dbinstance.recieve_dataobject(dt.DataType.SPOKEN_LANGUAGES.value, row)
-
-  #  for index,row in split_array_tables['movies_spoken_languages'].iterrows():
-    #    dbinstance.recieve_dataobject(dt.DataType.SPOKEN_LANGUAGES_JEZIKU.value, row)
+# VNESENO
+#    for index, row in split_array_tables['production_companies'].iterrows():
+#        dbinstance.recieve_dataobject(dt.DataType.PRODUCTION_COMPANY.value, row)
+# VNESENO
+#    for key, value in split_array_tables['movies_production_companies'].iterrows():
+#        dbinstance.recieve_dataobject(dt.DataType.PRODUCIRA.value, value)
 
     # VNESENO
-    #for key,value in split_array_tables['movies_production_countries'].iterrows():
-     #   dbinstance.recieve_dataobject(dt.DataType.PRODUCIRA.value, value)
+    # for index, row in split_array_tables['genres'].iterrows():
+    #    dbinstance.recieve_dataobject(dt.DataType.GENRES.value, row)
+    # VNESENO
+    # for index,row  in split_array_tables['movies_genres'].iterrows():
+    #   dbinstance.recieve_dataobject(dt.DataType.VSTILU.value, row)
 
 
+#VNESENO
+#    for index, row in split_array_tables['production_countries'].iterrows():
+#        dbinstance.recieve_dataobject(dt.DataType.PRODUCTION_COUNTRY.value, row)
+#VNESENO
  #   for key, value in split_array_tables['movies_production_countries'].iterrows():
-#        dbinstance.recieve_dataobject(dt.DataType.PRODUCIRA_COUNTRY.value, value)
+#         dbinstance.recieve_dataobject(dt.DataType.PRODUCIRA_COUNTRY.value, value)
+
+
+    for index, row in split_array_tables['spoken_languages'].iterrows():
+        dbinstance.recieve_dataobject(dt.DataType.SPOKEN_LANGUAGES.value, row)
+
+    for index,row in split_array_tables['movies_spoken_languages'].iterrows():
+        dbinstance.recieve_dataobject(dt.DataType.SPOKEN_LANGUAGES_JEZIKU.value, row)
+
+
+
+
 
 
 def read_keywords(dbinstance):

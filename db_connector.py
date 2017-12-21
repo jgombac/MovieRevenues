@@ -80,10 +80,13 @@ class DB_connector:
                  data = (id_prod, prod_name)
                  self.insert_db_production_companies(data)
             elif type == 8:
-                prod = obj['id_production_countries']
-                name = obj['name']
-                data = (prod, name)
-                self.insert_db_production_country(data)
+                try:
+                    prod = obj['id_production_countries']
+                    name = obj['name']
+                    data = (prod, name)
+                    self.insert_db_production_country(data)
+                except Exception as e:
+                    print("Parsing error", e)
             elif type == 9:
                 gender = int(obj['gender'])
                 id_person = int(obj['id_person'])
@@ -92,31 +95,45 @@ class DB_connector:
                 dat = (id_person,name,gender,prof)
                 self.insert_db_production_people(dat)
             elif type == 10:
-                id  = obj['id_spoken_languages']
-                name = obj['name']
-                data = (id, name)
-                self.insert_db_spoken_languages(data)
+                try:
+                    id  = obj['id_spoken_languages']
+                    name = obj['name']
+                    data = (id, name)
+                    self.insert_db_spoken_languages(data)
+                except Exception as e:
+                    print("Parsing error", e)
             elif type == 13:
-                print(obj)
-                id = int(obj['id_tmdb'])
-                name = obj['id_spoken_languages']
-                data = (id, name)
-                self.insert_db_spoken_languages_vmesna(data)
+                try:
+                    id = int(obj['id_tmdb'])
+                    name = obj['id_spoken_languages']
+                    data = (id, name)
+                    self.insert_db_spoken_languages_vmesna(data)
+                except Exception as e:
+                    print("Parsing error", e)
             elif type == 11:
-                id_prod = int(obj['id_production_companies'])
-                id_tmdb = int(obj['id_tmdb'])
-                data =(id_tmdb,id_prod)
-                self.insert_db_producira(data)
+                try:
+                    id_prod = int(obj['id_production_companies'])
+                    id_tmdb = int(obj['id_tmdb'])
+                    data =(id_tmdb,id_prod)
+                    self.insert_db_producira(data)
+                except Exception as e:
+                    print("Error parsing values", e)
             elif type == 12:
-                id_tmdb = int(obj['id_tmdb'])
-                id_production = obj['id_production_countries']
-                data = (id_tmdb,id_production)
-                self.insert_db_producira_country(data)
+                try:
+                    id_tmdb = int(obj['id_tmdb'])
+                    id_production = obj['id_production_countries']
+                    data = (id_tmdb,id_production)
+                    self.insert_db_producira_country(data)
+                except Exception as e:
+                    print("Error parsing values", e)
             elif type == 14:
-                id_tmdb = int(obj['id_tmdb'])
-                genres = int(obj['id_genres'])
-                data = (id_tmdb, genres)
-                self.insert_genres(data)
+                try:
+                    id_tmdb = int(obj['id_tmdb'])
+                    genres = int(obj['id_genres'])
+                    data = (id_tmdb, genres)
+                    self.insert_genres(data)
+                except Exception as e:
+                    print("Error parsing values", e)
             elif type == 15:
                 id_tmdb = int(obj['id_tmdb'])
                 id_person = int(obj['id_person'])
@@ -188,13 +205,20 @@ class DB_connector:
         self.curs.commit()
 
     def insert_db_production_companies(self, data):
-        self.curs.execute("insert ignore into PRODUCTION_COMPANIES(ID_PRODUCTION_COMPANY,NAME) values (?,?);",
-                          data)
-        self.curs.commit()
+        try:
+            self.curs.execute("insert ignore into PRODUCTION_COMPANIES(ID_PRODUCTION_COMPANY,NAME) values (?,?);",
+                              data)
+            self.curs.commit()
+        except Exception as e:
+            print("SQL error", e)
+
     def insert_db_production_country(self, data):
-        self.curs.execute("insert ignore into PRODUCTION_COUNTRIES(ISO_3166_1,NAME) values (?,?);",
-                          data)
-        self.curs.commit()
+        try:
+            self.curs.execute("insert ignore into PRODUCTION_COUNTRIES(ISO_3166_1,NAME) values (?,?);",
+                              data)
+            self.curs.commit()
+        except Exception as e:
+            print("SQL error", e)
 
     def insert_db_production_people(self, data):
         self.curs.execute("insert ignore into PEOPLE(ID_PERSON,NAME,GENDER,PROFILE_PATH) values (?,?,?,?);",
@@ -202,28 +226,40 @@ class DB_connector:
         self.curs.commit()
 
     def insert_db_spoken_languages(self, data):
-        self.curs.execute("insert ignore into SPOKEN_LANGUAGES (ISO_639_1,NAME) values (?,?);",
-                          data)
-        self.curs.commit()
+        try:
+            self.curs.execute("insert ignore into SPOKEN_LANGUAGES (ISO_639_1,NAME) values (?,?);",
+                              data)
+            self.curs.commit()
+        except Exception as e:
+            print("SQL error", e)
 
     def insert_db_spoken_languages_vmesna(self, data):
-        self.curs.execute("insert ignore into V_JEZIKU (ID_TMDB,ISO_639_1) values (?,?);",
-                              data)
-        self.curs.commit()
+        try:
+            self.curs.execute("insert ignore into V_JEZIKU (ID_TMDB,ISO_639_1) values (?,?);",
+                                  data)
+            self.curs.commit()
+        except Exception as e:
+            print("SQL error", e)
+
     def insert_db_producira(self, data):
         self.curs.execute("insert into PRODUCIRA (ID_TMDB,ID_PRODUCTION_COMPANY) values (?,?);",
                               data)
 
         self.curs.commit()
     def insert_db_producira_country(self, data):
-        self.curs.execute("insert into PRODUCIRANO_V (ID_TMDB,ISO_3166_1) values (?,?);",
-                              data)
-        self.curs.commit()
-
+        try:
+            self.curs.execute("insert into PRODUCIRANO_V (ID_TMDB,ISO_3166_1) values (?,?);",
+                                  data)
+            self.curs.commit()
+        except Exception as e:
+            print("SQL error", e)
     def insert_genres(self, data):
-        self.curs.execute("insert ignore into V_STILU (ID_TMDB,ID_GENRE) values (?,?);",
-                          data)
-        self.curs.commit()
+        try:
+            self.curs.execute("insert ignore into V_STILU (ID_TMDB,ID_GENRE) values (?,?);",
+                              data)
+            self.curs.commit()
+        except Exception as e:
+            print("SQL ERROR", e)
     def insert_db_credits(self, data):
         self.curs.execute("insert into CREDIT (ID_TMDB,ID_PERSON,ID_CREDIT) values (?,?,?);",
                           data)
