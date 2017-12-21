@@ -6,13 +6,13 @@ import data_types as dt
 
 
 
-MOVIES_FILEPATH = "movies_demo.csv"
-movies_inner_cols = ["belongs_to_collection", "genres", "production_companies", "production_countries", "spoken_languages"]
+MOVIES_FILEPATH = "movies_metadata.csv"
+movies_inner_cols = ["genres"]
 movies_json_cols = ["belongs_to_collection"]
-movies_array_cols = [("genres", "id", "movies", "tmdb"),
-                     ("production_companies", "id", "movies", "tmdb"),
-                     ("production_countries", "iso_3166_1", "movies", "tmdb"),
-                     ("spoken_languages", "iso_639_1", "movies", "tmdb")]
+movies_array_cols = [("genres", "id", "movies", "tmdb"),]
+                     # ("production_companies", "id", "movies", "tmdb"),
+                     # ("production_countries", "iso_3166_1", "movies", "tmdb"),
+                     # ("spoken_languages", "iso_639_1", "movies", "tmdb")]
 
 CREDITS_FILEPATH = "credits_demo.csv"
 credits_inner_cols = ["cast", "crew"]
@@ -57,7 +57,7 @@ def getstuff2(filename, criterion):
 
 
 def read_file(filename, json_cols=list()):
-    data = pd.read_csv(filename,nrows=100,skiprows=[1,2000])
+    data = pd.read_csv(filename, skiprows=[i for i in range(1, 20000)], usecols=["genres","id"])
     for column in json_cols:
         for i, x in enumerate(data[column]):
             if not pd.isnull(x):
@@ -76,9 +76,10 @@ def split_json_columns(data, columns, row_id, id_append):
         for i, json in enumerate(col_data):
             if not pd.isnull(json):
                 outer_id = data[row_id][i]
-                for key in json:
-                    col_df[key].append(json[key])
-                data[column][i] = json["id"]
+                if isinstance(json, dict):
+                    for key in json:
+                        col_df[key].append(json[key])
+                    data[column][i] = json["id"]
                 #col_df[row_id_name].append(outer_id)
         jsons[column] = pd.DataFrame(col_df)
         #data.drop(column, axis=1, inplace=True)
@@ -126,38 +127,46 @@ def json_to_dataframe(jsons):
 def read_movies(dbinstance):
     movies_raw = read_file(MOVIES_FILEPATH, movies_inner_cols)
     split_array_tables = split_array_columns(movies_raw, "id", movies_array_cols)
-    split_json_tables = split_json_columns(movies_raw, movies_json_cols, "id", "tmdb")
+    #split_json_tables = split_json_columns(movies_raw, movies_json_cols, "id", "tmdb")
     movies_raw.rename(index=str, columns={"id": "id_tmdb", "imdb_id": "id_imdb"}, inplace=True)
-    #for key, value in split_json_tables['belongs_to_collection'].iterrows():
-      #    dbinstance.recieve_dataobject(dt.DataType.COLLECTION.value, value)
+    print(split_array_tables)
+
+    #VNESENO
+    # for key, value in split_json_tables['belongs_to_collection'].iterrows():
+    #      dbinstance.recieve_dataobject(dt.DataType.COLLECTION.value, value)
+
     # VNESENO
+    # for index, row in movies_raw.iterrows():
+    #     dbinstance.recieve_dataobject(dt.DataType.MOVIE.value, row)
+
+
     #for key, value in split_array_tables['movies_production_companies'].iterrows():
       #  dbinstance.recieve_dataobject(dt.DataType.PRODUCIRA.value, value)
 
 
 
-    # VNESENO
-    for index, row in movies_raw.iterrows():
-        dbinstance.recieve_dataobject(dt.DataType.MOVIE.value, row)
 
-    # VNESENO
-    #for index, row in split_array_tables['genres'].iterrows():
-     #   dbinstance.recieve_dataobject(dt.DataType.GENRES.value, row)
-    # VNESENO
+
+    #
+    # for index, row in split_array_tables['genres'].iterrows():
+    #    dbinstance.recieve_dataobject(dt.DataType.GENRES.value, row)
+
+    for index,row  in split_array_tables['movies_genres'].iterrows():
+       dbinstance.recieve_dataobject(dt.DataType.VSTILU.value, row)
+
+
     #for index, row in split_array_tables['production_companies'].iterrows():
      #   dbinstance.recieve_dataobject(dt.DataType.PRODUCTION_COMPANY.value, row)
 
     #for index, row in split_array_tables['production_countries'].iterrows():
      #   dbinstance.recieve_dataobject(dt.DataType.PRODUCTION_COUNTRY.value, row)
-        # VNESENO
+
     #for index, row in split_array_tables['spoken_languages'].iterrows():
         #dbinstance.recieve_dataobject(dt.DataType.SPOKEN_LANGUAGES.value, row)
-    # VNESENO
+
   #  for index,row in split_array_tables['movies_spoken_languages'].iterrows():
     #    dbinstance.recieve_dataobject(dt.DataType.SPOKEN_LANGUAGES_JEZIKU.value, row)
-    # VNESENO
-   # for index,row  in split_array_tables['movies_genres'].iterrows():
-    #    dbinstance.recieve_dataobject(dt.DataType.VSTILU.value, row)
+
     # VNESENO
     #for key,value in split_array_tables['movies_production_countries'].iterrows():
      #   dbinstance.recieve_dataobject(dt.DataType.PRODUCIRA.value, value)
@@ -249,9 +258,13 @@ def read_ratings(dbinstance):
 if __name__ == "__main__":
     coninstance = db.DB_connector("DSN=MOVIESDB;UID=admin_python;PWD=Python123")
     #read_keywords(coninstance)
-    read_movies(coninstance)
+    try:
+        read_movies(coninstance)
     #read_links(coninstance)
     #read_ratings(coninstance)
     #read_credits(coninstance)
-    coninstance.close_connection()
+        coninstance.close_connection()
+    except Exception as e:
+        print("CLOSING CONNECTION ON ERROR", e)
+        coninstance.close_connection()
 

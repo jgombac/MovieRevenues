@@ -12,36 +12,39 @@ class DB_connector:
     def close_connection(self):
         self.connection.close()
     def parse_date(self,datestring):
-        i = datestring.split('/')[::-1]
-        tmp = i[1]
-        i[1] = i[2]
-        i[2] = tmp
-        return ''.join(i)
+        if isinstance(datestring, str):
+            i = datestring.split('-')[::-1]
+            tmp = i[1]
+            i[1] = i[2]
+            i[2] = tmp
+            return ''.join(i)
+        return None
 
     def recieve_dataobject(self,type,obj):
             if type == 1:
                 id = obj['id_tmdb']
                 belongs = None if pan.isnull(obj['belongs_to_collection']) else obj['belongs_to_collection']
                 adult = 1 if obj['adult'] == "TRUE" else 0
-                budget = int(obj['budget'])
+                budget = None if pan.isnull(obj['budget']) or not isinstance(obj["budget"], int) else int(obj['budget'])
                 homepage = None if pan.isnull(obj['homepage']) else obj['homepage']
-                imdb = obj['id_imdb']
-                original_l = obj['original_language']
-                original_t = obj['original_title']
+                imdb = None if pan.isnull(obj['id_imdb']) else obj['id_imdb']
+                original_l = None if pan.isnull(obj['original_language']) else obj['original_language']
+                original_t = None if pan.isnull(obj['original_title']) else obj['original_title']
                 overv =  None if pan.isnull(obj['overview']) else obj['overview']
                 popularity = None if pan.isnull(obj['popularity']) else obj['popularity']
-                poster_path = obj['poster_path']
-                release = self.parse_date(obj['release_date'])
-                revenue = obj['revenue']
-                runtime = obj['runtime']
+                poster_path = None if pan.isnull(obj['poster_path']) else obj['poster_path']
+                # release = self.parse_date(obj['release_date'])
+                release = obj['release_date'] if isinstance(obj["release_date"], str) else None
+                revenue = None if pan.isnull(obj['revenue']) else obj['revenue']
+                runtime = None if pan.isnull(obj['runtime']) else obj['runtime']
                 status = None if pan.isnull(obj['status']) else obj['status']
                 tagline = None if pan.isnull(obj['tagline']) else obj['tagline']
                 vid = 0 if (pan.isnull(obj['video']) or obj['video'] == "FALSE") else 1
-                vote_avg = float(obj['vote_average'])
-                vote_count = int(obj['vote_count'])
+                vote_avg = None if pan.isnull(obj['vote_average']) else float(obj['vote_average'])
+                vote_count = None if pan.isnull(obj['vote_count']) else int(obj['vote_count'])
                 data = (id,belongs,adult,budget,homepage,imdb,original_l,original_t,overv,popularity,poster_path,release,
                         revenue,runtime,status,tagline,vid,vote_avg,vote_count)
-                print(data)
+                #print(data)
                 self.insert_db_mov(data)
             elif type == 2:
                 backdrop = obj['backdrop_path']
@@ -156,14 +159,17 @@ class DB_connector:
         self.curs.commit()
 
     def insert_db_mov(self,data):
-        self.curs.execute('insert ignore into MOVIES(ID_TMDB,ID_COLLECTION,ADULT,BUDGET,HOMEPAGE,IMDB_ID,ORIGINAL_LANGUAGE,'
-                          'ORIGINAL_TITLE,OVERVIEW,POPULARITY,POSTER_PATH,RELEASE_DATE,REVENUE,RUNTIME,STATUS,TAGLINE,'
-                          'VIDEO,VOTE_AVERAGE,VOTE_COUNT)'
-                          'values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);',data)
-        self.curs.commit()
+        try:
+            self.curs.execute('insert ignore into MOVIES(ID_TMDB,ID_COLLECTION,ADULT,BUDGET,HOMEPAGE,IMDB_ID,ORIGINAL_LANGUAGE,'
+                              'ORIGINAL_TITLE,OVERVIEW,POPULARITY,POSTER_PATH,RELEASE_DATE,REVENUE,RUNTIME,STATUS,TAGLINE,'
+                              'VIDEO,VOTE_AVERAGE,VOTE_COUNT)'
+                              'values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);',data)
+            self.curs.commit()
+        except:
+            print("ERROR INSERTING", data)
 
     def insert_db_coll(self,data):
-        self.curs.execute("insert into COLLECTIONS(ID_COLLECTION,NAME,POSTER_PATH,BACKDROP_PATH) values (?,?,?,?);", data)
+        self.curs.execute("insert ignore into COLLECTIONS(ID_COLLECTION,NAME,POSTER_PATH,BACKDROP_PATH) values (?,?,?,?);", data)
         self.curs.commit()
 
     def insert_db_links(self, data):
@@ -215,7 +221,7 @@ class DB_connector:
         self.curs.commit()
 
     def insert_genres(self, data):
-        self.curs.execute("insert into V_STILU (ID_TMDB,ID_GENRE) values (?,?);",
+        self.curs.execute("insert ignore into V_STILU (ID_TMDB,ID_GENRE) values (?,?);",
                           data)
         self.curs.commit()
     def insert_db_credits(self, data):
