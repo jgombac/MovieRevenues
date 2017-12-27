@@ -88,12 +88,15 @@ class DB_connector:
                 except Exception as e:
                     print("Parsing error", e)
             elif type == 9:
-                gender = int(obj['gender'])
-                id_person = int(obj['id_person'])
-                prof = obj['profile_path']
-                name = obj['name']
-                dat = (id_person,name,gender,prof)
-                self.insert_db_production_people(dat)
+                try:
+                    gender = obj['gender']
+                    id_person = obj['id_person']
+                    prof = obj['profile_path']
+                    name = obj['name']
+                    dat = (id_person,name,gender,prof)
+                    self.insert_db_production_people(dat)
+                except Exception as e:
+                    print(e)
             elif type == 10:
                 try:
                     id  = obj['id_spoken_languages']
@@ -135,25 +138,32 @@ class DB_connector:
                 except Exception as e:
                     print("Error parsing values", e)
             elif type == 15:
-                id_tmdb = int(obj['id_tmdb'])
-                id_person = int(obj['id_person'])
-                id_cred = obj['id_credit']
-                data = (id_tmdb, id_person,id_cred)
-                self.insert_db_credits(data)
+                try:
+                    id_tmdb = int(obj['id_tmdb'])
+                    id_person = int(obj['id_person'])
+                    id_cred = obj['id_credit']
+                    data = (id_tmdb, id_person,id_cred)
+                    self.insert_db_credits(data)
+                except Exception as e:
+                    print(e)
             elif type == 16:
-                id_person = obj['id_person']
-                id_cred = obj['id_credit']
-                chara = obj['character']
-                order = obj['order']
-                data = (order,chara,id_person)
-                self.insert_db_cast(data)
+                try:
+                    id_cred = obj['id_credit']
+                    chara = obj['character']
+                    order = obj['order']
+                    data = (order,chara,id_cred)
+                    self.insert_db_cast(data)
+                except Exception as e:
+                    print(e)
             elif type == 17:
-                department = obj['department']
-                job = obj['job']
-                id_person = obj['id_person']
-                data = (job, department, id_person)
-                self.insert_db_crew(data)
-
+                try:
+                    department = obj['department']
+                    job = obj['job']
+                    id_cred = obj['id_credit']
+                    data = (job, department, id_cred)
+                    self.insert_db_crew(data)
+                except Exception as e:
+                    print(e)
 
 
     def recieve_dataobject_with_key(self,type,key,obj):
@@ -221,9 +231,12 @@ class DB_connector:
             print("SQL error", e)
 
     def insert_db_production_people(self, data):
-        self.curs.execute("insert ignore into PEOPLE(ID_PERSON,NAME,GENDER,PROFILE_PATH) values (?,?,?,?);",
-                          data)
-        self.curs.commit()
+        try:
+            self.curs.execute("insert ignore into PEOPLE(ID_PERSON,NAME,GENDER,PROFILE_PATH) values (?,?,?,?);",
+                              data)
+            self.curs.commit()
+        except Exception as e:
+            print(e)
 
     def insert_db_spoken_languages(self, data):
         try:
@@ -261,18 +274,27 @@ class DB_connector:
         except Exception as e:
             print("SQL ERROR", e)
     def insert_db_credits(self, data):
-        self.curs.execute("insert into CREDIT (ID_TMDB,ID_PERSON,ID_CREDIT) values (?,?,?);",
-                          data)
-        self.curs.commit()
+        try:
+            self.curs.execute("insert into CREDIT (ID_TMDB,ID_PERSON,ID_CREDIT) values (?,?,?);",
+                              data)
+            self.curs.commit()
+        except Exception as e:
+            print(e)
 
     def insert_db_cast(self, data):
-        self.curs.execute("insert into CAST (ordr,charact,id_person) values (?,?,?);",
-                          data)
-        self.curs.commit()
+        try:
+            self.curs.execute("insert ignore into CAST (ordr,charact,id_credit) values (?,?,?);",
+                              data)
+            self.curs.commit()
+        except Exception as e:
+            print(e)
     def insert_db_crew(self, data):
-        self.curs.execute("insert ignore into CREW (job,department,id_person) values (?,?,?);",
-                          data)
-        self.curs.commit()
+        try:
+            self.curs.execute("insert ignore into CREW (job,department,id_credit) values (?,?,?);",
+                              data)
+            self.curs.commit()
+        except Exception as e:
+            print(e)
 
     def is_valid(self,obj,type):
         return isinstance(obj,pan.Series) and isinstance(type,int)
