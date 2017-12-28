@@ -16,25 +16,38 @@ class DB(object):
         self.connection.close()
 
     def movies(self):
-        sql = "select ID_TMDB, ORIGINAL_TITLE, ORIGINAL_LANGUAGE, ID_COLLECTION, ADULT, BUDGET, REVENUE from movies where BUDGET > 0 and REVENUE > 0"
+        sql = "SELECT distinct ID_TMDB, (ID_COLLECTION IS NOT NULL) AS IN_COLLECTION, ORIGINAL_LANGUAGE, BUDGET, REVENUE FROM movies where REVENUE > 1000 and BUDGET > 1000"
         return pd.read_sql(sql, self.connection)
 
     def actors(self):
-        sql = "select distinct mov.ID_TMDB, mov.ORIGINAL_TITLE, cr.ID_CREDIT, ca.charact, pl.NAME from movies as mov join credit as cr on (cr.ID_TMDB = mov.ID_TMDB)"+\
-              " join cast as ca on (ca.id_credit = cr.ID_CREDIT) join people as pl on (pl.ID_PERSON = cr.ID_PERSON) where mov.REVENUE > 0 and mov.BUDGET > 0"
+        sql = "SELECT distinct pl.ID_PERSON FROM cast as ca JOIN credits as cr on (cr.ID_CREDIT = ca.id_credit) JOIN people as pl on (pl.ID_PERSON = cr.ID_PERSON)"+\
+              " JOIN movies as mov on (mov.ID_TMDB = cr.ID_TMDB) where mov.REVENUE > 1000 AND mov.BUDGET > 1000"
+        return pd.read_sql(sql, self.connection)
+
+    def movie_actors(self, id_tmdb):
+        sql = "SELECT distinct pl.ID_PERSON from cast as ca JOIN credits as cr on (cr.ID_CREDIT = ca.id_credit) JOIN movies as mov on (mov.ID_TMDB = cr.ID_TMDB)"+\
+              " JOIN people as pl on (cr.ID_PERSON = pl.ID_PERSON) WHERE mov.ID_TMDB = " + id_tmdb
         return pd.read_sql(sql, self.connection)
 
     def directors(self):
-        sql = "select distinct mov.ID_TMDB, mov.ORIGINAL_TITLE, cr.ID_CREDIT, ca.job, pl.NAME from movies as mov join credit as"+\
+        sql = "select distinct pl.ID_PERSON from movies as mov join credit as"+\
               " cr on (cr.ID_TMDB = mov.ID_TMDB) join crew as ca on (ca.id_credit = cr.ID_CREDIT) join people as pl on (pl.ID_PERSON = cr.ID_PERSON)"+\
               " where mov.REVENUE > 0 and mov.BUDGET > 0 and ca.job = 'Director'"
+        return pd.read_sql(sql, self.connection)
+
+    def movie_directors(self, id_tmdb):
+        sql = "select distinct pl.ID_PERSON from movies as mov join credit as" + \
+              " cr on (cr.ID_TMDB = mov.ID_TMDB) join crew as ca on (ca.id_credit = cr.ID_CREDIT) join people as pl on (pl.ID_PERSON = cr.ID_PERSON)" + \
+              " where mov.REVENUE > 0 and mov.BUDGET > 0 and ca.job = 'Director' and mov.ID_TMDB = " + id_tmdb
         return pd.read_sql(sql, self.connection)
 
 
 if __name__ == "__main__":
     db = DB()
     movies = db.movies()
-    print(movies)
+    #actors = db.actors()
+    directors = db.directors()
+    print(movies, directors )
 
     db.close()
 

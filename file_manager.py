@@ -3,7 +3,7 @@ import ast
 from collections import defaultdict
 import db_connector as db
 import data_types as dt
-
+import sys, traceback
 
 
 MOVIES_FILEPATH = "movies_metadata.csv"
@@ -15,8 +15,8 @@ movies_array_cols = [#("genres", "id", "movies", "tmdb"),]
                       ("spoken_languages", "iso_639_1", "movies", "tmdb")]
 
 CREDITS_FILEPATH = "credits.csv"
-credits_inner_cols = ["crew"]#"cast", ]#"crew"]
-credits_array_cols = [#("cast", "id", "movies", "tmdb"), ]
+credits_inner_cols = ["crew", "cast", ]#"crew"]
+credits_array_cols = [("cast", "id", "movies", "tmdb"),
                       ("crew", "id", "movies", "tmdb")]
 
 KEYWORDS_FILEPATH = "keywords_demo.csv"
@@ -191,26 +191,26 @@ def split_credits(data):
     # id_credit, job, department, !id_tmdb, !id_person
     crew = []
 
-    # for i, cast_array in enumerate(data["cast"]):
-    #     tmdb_id = data["id"][i]
-    #     for cast_obj in cast_array:
-    #         people.append({"id_person": cast_obj["id"], "name": cast_obj["name"], "gender": cast_obj["gender"], "profile_path": cast_obj["profile_path"]})
-    #         cast.append({"id_credit": cast_obj["credit_id"], "order": cast_obj["order"], "character": cast_obj["character"]})
-    #         credits.append({"id_credit": cast_obj["credit_id"],"id_tmdb": tmdb_id, "id_person": cast_obj["id"]})
+    for i, cast_array in enumerate(data["cast"]):
+        tmdb_id = data["id"][i]
+        for cast_obj in cast_array:
+            people.append({"id_person": cast_obj["id"], "name": cast_obj["name"], "gender": cast_obj["gender"], "profile_path": cast_obj["profile_path"]})
+            cast.append({"id_credit": cast_obj["credit_id"], "order": cast_obj["order"], "character": cast_obj["character"]})
+            #credits.append({"id_credit": cast_obj["credit_id"],"id_tmdb": tmdb_id, "id_person": cast_obj["id"]})
 
     for i, crew_array in enumerate(data["crew"]):
         tmdb_id = data["id"][i]
         for crew_obj in crew_array:
-            #people.append({"id_person": crew_obj["id"], "name": crew_obj["name"], "gender": crew_obj["gender"], "profile_path": crew_obj["profile_path"]})
-            crew.append({"id_credit": crew_obj["credit_id"], "job": crew_obj["job"], "department": crew_obj["department"]})
+            people.append({"id_person": crew_obj["id"], "name": crew_obj["name"], "gender": crew_obj["gender"], "profile_path": crew_obj["profile_path"]})
+            #crew.append({"id_credit": crew_obj["credit_id"], "job": crew_obj["job"], "department": crew_obj["department"]})
             #credits.append({"id_credit": crew_obj["credit_id"], "id_tmdb": tmdb_id, "id_person": crew_obj["id"]})
 
-    #  "cast": pd.DataFrame(cast),"people": pd.DataFrame(people), "credits": pd.DataFrame(credits),
-    return {"crew": pd.DataFrame(crew)}
+    #  "cast": pd.DataFrame(cast),"people": pd.DataFrame(people), "credits": pd.DataFrame(credits),"crew": pd.DataFrame(crew)
+    return {"cast": pd.DataFrame(cast),"people": pd.DataFrame(people),}
 
 
 def read_file(filename, json_cols=list()):
-    data = pd.read_csv(filename, skiprows=[i for i in range(1, 99)], usecols=["crew","id"])
+    data = pd.read_csv(filename, skiprows=[i for i in range(1, 99)], usecols=["crew","cast","id"])
     for column in json_cols:
         for i, x in enumerate(data[column]):
             if not pd.isnull(x):
@@ -223,12 +223,12 @@ def read_credits(dbinstance):
     credit_tables = split_credits(credits)
     #VNESENO
     print(credit_tables)
-    # for key,value in credit_tables['cast'].iterrows():
-    #    dbinstance.recieve_dataobject(dt.DataType.CAST.value, value)
-    for key, value in credit_tables['crew'].iterrows():
-       dbinstance.recieve_dataobject(dt.DataType.CREW.value, value)
-    # for key, value in credit_tables['people'].iterrows():
-    #     dbinstance.recieve_dataobject(dt.DataType.PEOPLE.value, value)
+    for key,value in credit_tables['cast'].iterrows():
+       dbinstance.recieve_dataobject(dt.DataType.CAST.value, value)
+    # for key, value in credit_tables['crew'].iterrows():
+    #    dbinstance.recieve_dataobject(dt.DataType.CREW.value, value)
+    for key, value in credit_tables['people'].iterrows():
+        dbinstance.recieve_dataobject(dt.DataType.PEOPLE.value, value)
     # for key, value in credit_tables['credits'].iterrows():
     #    dbinstance.recieve_dataobject(dt.DataType.CREDITS.value, value)
     #vneseno
@@ -265,15 +265,16 @@ def read_ratings(dbinstance):
 if __name__ == "__main__":
     pass
     # #coninstance = db.DB_connector("DSN=MOVIESDB;UID=admin_python;PWD=Python123")
-    # coninstance = db.DB_connector("DSN=MOVIESLOCAL;UID=root;PWD=")
+     #coninstance = db.DB_connector("DSN=MOVIESLOCAL;UID=root;PWD=")
     # #read_keywords(coninstance)
     # try:
     #     #read_movies(coninstance)
     # #read_links(coninstance)
     # #read_ratings(coninstance)
     #     read_credits(coninstance)
-    #     coninstance.close_connection()
+     #    coninstance.close_connection()
     # except Exception as e:
-    #      print("CLOSING CONNECTION ON ERROR", e)
-    #      coninstance.close_connection()
+    #     traceback.print_exc(file=sys.stdout)
+     #    print("CLOSING CONNECTION ON ERROR", e)
+     #    coninstance.close_connection()
     # #
