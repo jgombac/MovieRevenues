@@ -5,6 +5,8 @@
 
 import pyodbc as po
 import pandas as pd
+import time
+import threading
 
 class DB(object):
 
@@ -28,35 +30,94 @@ class DB(object):
         return pd.read_sql(sql, self.connection)
 
     def movie_actors(self, id_tmdb):
-        sql = "SELECT distinct pl.ID_PERSON from cast as ca JOIN credits as cr on (cr.ID_CREDIT = ca.id_credit) JOIN movies as mov on (mov.ID_TMDB = cr.ID_TMDB)"+\
-              " JOIN people as pl on (cr.ID_PERSON = pl.ID_PERSON) WHERE mov.ID_TMDB = " + id_tmdb
+        sql = "select pl.ID_PERSON, pl.NAME from people as pl inner join " +\
+                "(select distinct cr.ID_PERSON from cast as ca inner join " +\
+                "(select cr.ID_CREDIT, cr.ID_PERSON from credits as cr inner join " +\
+                "(select mov.ID_TMDB from movies as mov where mov.ID_TMDB = "+id_tmdb+") " +\
+                "as mov on (cr.ID_TMDB = mov.ID_TMDB))" +\
+                "as cr on (ca.id_credit = cr.ID_CREDIT)) " +\
+                "as ca on (ca.ID_PERSON = pl.ID_PERSON)"
         return pd.read_sql(sql, self.connection)
 
     def directors(self):
-        sql = "select distinct pl.ID_PERSON from movies as mov join credit as"+\
-              " cr on (cr.ID_TMDB = mov.ID_TMDB) join crew as ca on (ca.id_credit = cr.ID_CREDIT) join people as pl on (pl.ID_PERSON = cr.ID_PERSON)"+\
-              " where mov.REVENUE > 0 and mov.BUDGET > 0 and ca.job = 'Director'"
+        sql = "select pl.ID_PERSON, pl.NAME from people as pl inner join " +\
+                "(select distinct cr.ID_PERSON from crew as ca inner join " +\
+                "(select cr.ID_CREDIT, cr.ID_PERSON from credits as cr inner join " +\
+                "(select mov.ID_TMDB from movies as mov where mov.REVENUE > 1000 and mov.BUDGET > 1000) " +\
+                "as mov on (cr.ID_TMDB = mov.ID_TMDB))" +\
+                "as cr on (ca.id_credit = cr.ID_CREDIT) where ca.job = 'Director') " +\
+                "as ca on (ca.ID_PERSON = pl.ID_PERSON)"
         return pd.read_sql(sql, self.connection)
 
-    def movie_directors(self, id_tmdb):
-        sql = "select distinct pl.ID_PERSON from movies as mov join credit as" + \
-              " cr on (cr.ID_TMDB = mov.ID_TMDB) join crew as ca on (ca.id_credit = cr.ID_CREDIT) join people as pl on (pl.ID_PERSON = cr.ID_PERSON)" + \
-              " where mov.REVENUE > 0 and mov.BUDGET > 0 and ca.job = 'Director' and mov.ID_TMDB = " + id_tmdb
+    def movie_director(self, id_tmdb):
+        sql = "select pl.ID_PERSON, pl.NAME from people as pl inner join " +\
+                "(select distinct cr.ID_PERSON from crew as ca inner join " +\
+                "(select cr.ID_CREDIT, cr.ID_PERSON from credits as cr inner join " +\
+                "(select mov.ID_TMDB from movies as mov where mov.ID_TMDB = "+id_tmdb+") " +\
+                "as mov on (cr.ID_TMDB = mov.ID_TMDB))" +\
+                "as cr on (ca.id_credit = cr.ID_CREDIT) where ca.job = 'Director') " +\
+                "as ca on (ca.ID_PERSON = pl.ID_PERSON) limit 1"
         return pd.read_sql(sql, self.connection)
 
 
-if __name__ == "__main__":
+MOVIES = None
+ACTORS = None
+DIRECTORS = None
+
+
+def movie_actors():
+    print("act start")
     db = DB()
     try:
-        #movies = db.movies()
-        actors = db.actors()
-        #directors = db.directors()
-        print( actors )
+        for i, val in MOVIES.iterrows():
+            if i > 10:
+                db.close()
+                print("act end")
+                return
+            actors = db.movie_actors(str(val["ID_TMDB"]))
+    except:
+        db.close()
+        print("act err")
 
+def movie_directors():
+    print("dir start")
+    db = DB()
+    try:
+        for i, val in MOVIES.iterrows():
+            if i > 10:
+                db.close()
+                print("dir end")
+                return
+            director = db.movie_director(str(val["ID_TMDB"]))
+    except:
+        db.close()
+        print("dir err")
+
+def init():
+    global MOVIES, ACTORS, DIRECTORS
+    db = DB()
+    try:
+        t = time.time()
+        MOVIES = db.movies()
+        #ACTORS = db.actors()
+        #DIRECTORS = db.directors()
+        print("MAIN DONE")
+
+        at = threading.Thread(target=movie_actors)
+        dt = threading.Thread(target=movie_directors)
+        at.start()
+        dt.start()
+        print((time.time() - t), "s")
         db.close()
     except Exception as e:
         print(e)
         db.close()
+
+if __name__ == "__main__":
+    init()
+
+
+
 
 # stevilo unikatnih vrstic v podanih stolpcih in tabelah
 # vhod: dict {"ime_tabele1": ["stolpec1", "stolpec2"], "ime_tabele2": ["stolpec1"]}
