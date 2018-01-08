@@ -20,8 +20,11 @@ class DB(object):
         return pd.read_sql(sql, self.connection)
 
     def actors(self):
-        sql = "SELECT distinct pl.ID_PERSON FROM cast as ca JOIN credits as cr on (cr.ID_CREDIT = ca.id_credit) JOIN people as pl on (pl.ID_PERSON = cr.ID_PERSON)"+\
-              " JOIN movies as mov on (mov.ID_TMDB = cr.ID_TMDB) where mov.REVENUE > 1000 AND mov.BUDGET > 1000"
+        sql = "select pl.ID_PERSON, pl.NAME from people as pl inner join " +\
+            "(select distinct cr.ID_PERSON from cast as ca inner join " +\
+            "(select cr.ID_CREDIT, cr.ID_PERSON from credits as cr inner join " +\
+            "(select mov.ID_TMDB from movies as mov where mov.REVENUE > 1000 and mov.BUDGET > 1000) " +\
+            "as mov on (cr.ID_TMDB = mov.ID_TMDB)) as cr on (ca.id_credit = cr.ID_CREDIT)) as ca on (ca.ID_PERSON = pl.ID_PERSON)"
         return pd.read_sql(sql, self.connection)
 
     def movie_actors(self, id_tmdb):
@@ -44,12 +47,16 @@ class DB(object):
 
 if __name__ == "__main__":
     db = DB()
-    movies = db.movies()
-    #actors = db.actors()
-    directors = db.directors()
-    print(movies, directors )
+    try:
+        #movies = db.movies()
+        actors = db.actors()
+        #directors = db.directors()
+        print( actors )
 
-    db.close()
+        db.close()
+    except Exception as e:
+        print(e)
+        db.close()
 
 # stevilo unikatnih vrstic v podanih stolpcih in tabelah
 # vhod: dict {"ime_tabele1": ["stolpec1", "stolpec2"], "ime_tabele2": ["stolpec1"]}
