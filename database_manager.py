@@ -33,6 +33,33 @@ class DB(object):
             "as mov on (cr.ID_TMDB = mov.ID_TMDB)) as cr on (ca.id_credit = cr.ID_CREDIT)) as ca on (ca.ID_PERSON = pl.ID_PERSON)"
         return pd.read_sql(sql, self.connection)
 
+    def movies_with_actors(self, offset):
+        sql = "select mov_act.ID_TMDB, group_concat(mov_act.ID_PERSON separator '|') as actors from " +\
+            "(select pl.ID_TMDB, pl.ID_PERSON from cast as ca inner join " +\
+            "(select cr.ID_TMDB, cr.ID_CREDIT, pl.ID_PERSON from people as pl inner join " +\
+            "(select mov.ID_TMDB, cr.ID_CREDIT, cr.ID_PERSON from credits as cr inner join " +\
+            "(select mov.ID_TMDB from movies as mov where mov.REVENUE > 1000 and mov.BUDGET > 1000) as mov " +\
+            "on (mov.ID_TMDB = cr.ID_TMDB)) as cr " +\
+            "on (cr.ID_PERSON = pl.ID_PERSON)) as pl " +\
+            "on  (pl.ID_CREDIT = ca.id_credit) " +\
+            "order by pl.ID_TMDB ASC) as mov_act " +\
+            "group by mov_act.ID_TMDB limit ?, 1000"
+        return pd.read_sql(sql, self.connection, params=[offset])
+
+    def movies_with_directors(self):
+        sql = "select mov_dir.ID_TMDB, group_concat(mov_dir.ID_PERSON separator '|') as directors from " +\
+            "(select pl.ID_TMDB, pl.ID_PERSON from crew as ca inner join " +\
+            "(select cr.ID_TMDB, cr.ID_CREDIT, pl.ID_PERSON from people as pl inner join " +\
+            "(select mov.ID_TMDB, cr.ID_CREDIT, cr.ID_PERSON from credits as cr inner join " +\
+            "(select mov.ID_TMDB from movies as mov where mov.REVENUE > 1000 and mov.BUDGET > 1000) as mov " +\
+            "on (mov.ID_TMDB = cr.ID_TMDB)) as cr " +\
+            "on (cr.ID_PERSON = pl.ID_PERSON)) as pl " +\
+            "on  (pl.ID_CREDIT = ca.id_credit) where ca.job = 'Director' " +\
+            "order by pl.ID_TMDB ASC) as mov_dir " +\
+            "group by mov_dir.ID_TMDB"
+        return pd.read_sql(sql, self.connection)
+
+
     def movie_actors(self, id_tmdb):
         sql = "select pl.ID_PERSON, pl.NAME from people as pl inner join " +\
                 "(select distinct cr.ID_PERSON from cast as ca inner join " +\
@@ -64,7 +91,7 @@ class DB(object):
         return self.cur.execute(sql, id_tmdb).fetchall()
 
 
-def movies(offset, q):
+def movies(offset, callQ):
     db = DB()
     try:
         movies = db.movies(offset)
@@ -72,12 +99,21 @@ def movies(offset, q):
         directors = movie_directors(movies)
         db.close()
 
-        cat_act = categorize(actors, "actor")
-        cat_dir = categorize(directors, "director")
+        threads = []
+        q = Queue()
+        act_t = threading.Thread(target=categorize, args=[actors, "actor", q])#categorize(actors, "actor")
+        dir_t = threading.Thread(target=categorize, args=[directors, "director", q])
+        threads.append(act_t)
+        threads.append(dir_t)
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+
 
         movies.set_index("ID_TMDB", inplace=True)
-        joined = pd.concat([movies, cat_act, cat_dir], axis=1, join_axes=[movies.index])
-        q.put(joined)
+        joined = pd.concat([movies, q.get(0), q.get(1)], axis=1, join_axes=[movies.index])
+        callQ.put(joined)
         return
     except:
         db.close()
@@ -112,12 +148,18 @@ def movie_directors(movies):
         print("act err", traceback.print_exc())
 
 
-def categorize(data, column):
+def categorize(data, column, q):
+    data = data[["ID_TMDB", column]]
+    cleaned = data.set_index("ID_TMDB")[column].str.split("|", expand=True).stack()
+    cats = pd.get_dummies(cleaned, prefix=column).groupby(level=0).sum()
+    q.put(cats)
+    return
+
+def categories(data, column):
     data = data[["ID_TMDB", column]]
     cleaned = data.set_index("ID_TMDB")[column].str.split("|", expand=True).stack()
     cats = pd.get_dummies(cleaned, prefix=column).groupby(level=0).sum()
     return cats
-
 
 
 def movie_worker():
@@ -144,6 +186,52 @@ def movie_worker():
     print(movie_data)
 
 
+def movies_with_actors(offset, q):
+    db = DB()
+    try:
+        result = db.movies_with_actors(offset)
+        db.close()
+        q.put(result)
+        return result
+    except:
+        db.close()
+        print("act err", traceback.print_exc())
+
+
+def actor_worker():
+    q = Queue()
+    threads = []
+    # Fetch results in chunks of 1000
+    for i in range(0, 2000, 1000):
+        t = threading.Thread(target=movies_with_actors, args=[i, q])
+        threads.append(t)
+
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+    print("data fetched")
+    q1 = Queue()
+    threads1 = []
+    for i in range(len(threads)):
+        result = q.get(i)
+        t = threading.Thread(target=categorize, args=[result, "actors", q1])
+        threads1.append(t)
+
+    for t in threads1:
+        t.start()
+    for t in threads1:
+        t.join()
+
+    for i in range(len(threads1)):
+        cats = q1.get(i)
+        print(cats)
+    # cats = categories(result1, "actors")
+    # print(cats)
+
+
+
+
 
 
 def init():
@@ -152,13 +240,14 @@ def init():
     try:
         ti = time.time()
         threads = []
-        mt = threading.Thread(target=movie_worker)
-        threads.append(mt)
-        for t in threads:
-            t.start()
-        for t in threads:
-            t.join()
-
+        # mt = threading.Thread(target=movie_worker)
+        # threads.append(mt)
+        actor_worker()
+        # for t in threads:
+        #     t.start()
+        # for t in threads:
+        #     t.join()
+        #
         print((time.time() - ti), "s")
         db.close()
     except Exception as e:
