@@ -1,9 +1,10 @@
 import tensorflow as tf
-
+import pandas as pd
+import numpy as np
 
 estimator = None
 
-def initialize():
+def initialize(features, labels):
     feature_columns = []
     hidden_units = [40, 60, 20]
     # po potrebi priredit optimizer
@@ -51,23 +52,23 @@ def predict(input):
     return estimator.predict(input_fn=build_input(input, None, 1, False))
 
 
-
-# INPUTS
-# keywords: categorical 158679
-# actors: categorical 562473
-# director: categorical
-# scenario: categorical
-# budget: numerical
-
-# ker je kategoričnih vrednosti veliko, se zna zgodit da bo input layer imel nad 20000 nevronov
-# v tem primeru treba testirat ce bo numerical vredu (najverjetneje ne)
-# drugače pa vektorizirat pred tem
+def split_data(data):
+    features = data.drop(["ID_TMDB", "REVENUE"], axis=1)
+    labels = data["REVENUE"]
+    return features, labels
 
 
-# OUTPUTS
-# revenue: numerical
+def read_train_data():
+    data = pd.read_feather("train_save.feather", nthreads=8)
+    return data
 
 
-def prepare_data(raw_data):
-    pass
+def init():
+    data = read_train_data()
+    features, labels = split_data(data)
+    print("FEATURES", features)
+    print("LABELS", labels)
+
+if __name__ == "__main__":
+    init()
 
