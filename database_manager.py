@@ -24,7 +24,7 @@ class DB(object):
         return pd.read_sql(sql, self.connection)
 
     def all(self):
-        sql = "select * from mov_act_dir"
+        sql = "SELECT m.* FROM mov_act_dir as m where m.ID_TMDB not in (21525, 41227, 80379)"
         return pd.read_sql(sql, self.connection)
 
     def actors(self):
@@ -278,6 +278,7 @@ def dummies(v, q):
 
 def prepare_data(data):
     data.set_index("ID_TMDB", inplace=True)
+
     df_split = {x: data.loc[x] for x in data.index.unique()}
 
     #threaded
@@ -296,6 +297,10 @@ def prepare_data(data):
     #     result = pd.concat([result, q.get(i)])
 
     #non threaded
+    # df = df_split[23830]#.to_frame().reset_index()
+    # print(type(df), df)
+    # return
+    print(df_split)
     result = pd.DataFrame()
     for k, v in df_split.items():
         dummies = pd.get_dummies(v, columns=["actor", "director"]).groupby(v.index).max()
@@ -303,8 +308,8 @@ def prepare_data(data):
 
     #result = pd.get_dummies(data, columns=["actor", "director"]).groupby(data.index).max()
     result.fillna(value=0.0, inplace=True)
-    print(result)
     result.reset_index(inplace=True)
+    print(result)
     result.to_feather("train_data.feather")
 
 if __name__ == "__main__":
