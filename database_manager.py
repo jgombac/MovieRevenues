@@ -23,6 +23,10 @@ class DB(object):
         sql = "SELECT distinct ID_TMDB, (ID_COLLECTION IS NOT NULL) AS IN_COLLECTION, ORIGINAL_LANGUAGE, BUDGET, REVENUE FROM movies where REVENUE > 1000 and BUDGET > 1000"
         return pd.read_sql(sql, self.connection)
 
+    def all(self):
+        sql = "select * from mov_act_dir"
+        return pd.read_sql(sql, self.connection)
+
     def actors(self):
         sql = "select pl.ID_PERSON, pl.NAME from people as pl inner join " +\
             "(select distinct cr.ID_PERSON from cast as ca inner join " +\
@@ -97,7 +101,6 @@ def categorize(data, column, q):
     q.put(cats)
     return
 
-
 def movies(q):
     db = DB()
     try:
@@ -110,8 +113,6 @@ def movies(q):
         db.close()
         traceback.print_exc()
 
-
-
 def movie_worker(queue):
     q = Queue()
     t = threading.Thread(target=movies, args=[q])
@@ -120,7 +121,6 @@ def movie_worker(queue):
     result = q.get(0)
     queue.put(result)
     return
-
 
 def movies_with_actors(offset, chunk, q):
     db = DB()
@@ -180,7 +180,6 @@ def actor_worker(queue):
     queue.put(joined)
     return
 
-
 def director_worker(queue):
     q = Queue()
     threads = []
@@ -216,10 +215,6 @@ def director_worker(queue):
     joined.fillna(value=0.0, inplace=True)
     queue.put(joined)
     return
-
-
-
-
 
 def init():
     global MOVIES, ACTORS, DIRECTORS
@@ -263,8 +258,60 @@ def read_train_data():
     data = pd.read_feather("train_save.feather", nthreads=8)
     return
 
+def prepare_categorical(data, column):
+    cleaned = data[column].str.split("|", expand=True).stack()
+    cats = pd.get_dummies(cleaned, prefix=column).groupby(level=0).sum()
+    return cats
+
+def fetch_data():
+    db = DB()
+    try:
+        result = db.all()
+        db.close()
+        return result
+    except:
+        db.close()
+        print("act err", traceback.print_exc())
+
+def dummies(v, q):
+    q.put(pd.get_dummies(v, columns=["actor", "director"]).groupby(v.index).max())
+
+def prepare_data(data):
+    data.set_index("ID_TMDB", inplace=True)
+    df_split = {x: data.loc[x] for x in data.index.unique()}
+
+    #threaded
+    # q = Queue()
+    # threads = []
+    # for k, v in df_split.items():
+    #     t = threading.Thread(target=dummies, args=[v, q])
+    #     t.start()
+    #     threads.append(t)
+    #
+    # for t in threads:
+    #     t.join()
+    #
+    # result = pd.DataFrame()
+    # for i in range(len(threads)):
+    #     result = pd.concat([result, q.get(i)])
+
+    #non threaded
+    result = pd.DataFrame()
+    for k, v in df_split.items():
+        dummies = pd.get_dummies(v, columns=["actor", "director"]).groupby(v.index).max()
+        result = pd.concat([result, dummies])
+
+    #result = pd.get_dummies(data, columns=["actor", "director"]).groupby(data.index).max()
+    result.fillna(value=0.0, inplace=True)
+    print(result)
+    result.reset_index(inplace=True)
+    result.to_feather("train_data.feather")
+
 if __name__ == "__main__":
-    pass
+    ti = time.time()
+    data = fetch_data()
+    prepare_data(data)
+    print(time.time() - ti, "s")
     #init()
     #read_train_data()
 
